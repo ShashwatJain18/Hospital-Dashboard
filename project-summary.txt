@@ -1,0 +1,88 @@
+# DoctorHub - Project Summary
+
+## Data Model Overview
+
+### Core Entities
+- **Users**: Doctors/staff with authentication and profile info
+- **Patients**: Patient records with demographics and medical info
+- **Messages**: Communication threads between users and patients
+- **Appointments**: Calendar events linking doctors and patients
+- **SupportTickets**: Help desk system with replies
+- **Settings**: User preferences and app configuration
+
+### Key Relationships
+- Users have many Messages, Appointments, SupportTickets
+- Patients have many Messages, Appointments, SupportTickets
+- SupportTickets have many TicketReplies
+- Users have one Settings record
+
+## File Structure & Feature Implementation
+
+### Database & Core Infrastructure
+- `prisma/schema.prisma` - Complete data model with relationships
+- `lib/db.ts` - Prisma client singleton
+- `lib/types.ts` - TypeScript interfaces for all entities
+- `lib/utils.ts` - Common utility functions (date formatting, etc.)
+
+### Data Persistence Strategy
+- `hooks/use-local-storage.ts` - Client-side storage hook
+- `hooks/use-sync-with-server.ts` - Hybrid storage (DB + localStorage fallback)
+- Automatic fallback to localStorage when DATABASE_URL not configured
+
+### Layout & Navigation
+- `app/layout.tsx` - Root layout with theme provider
+- `components/sidebar.tsx` - Main navigation sidebar
+- `components/header.tsx` - Top header with user profile and theme toggle
+- `app/globals.css` - Dark theme with medical-professional color scheme
+
+### Feature Pages
+- `app/page.tsx` - Dashboard with overview cards and quick actions
+- `app/patients/` - Patient list, search, add/edit forms, detail pages
+- `app/messages/` - Master-detail messaging interface with threads
+- `app/calendar/` - Month/week views with appointment management
+- `app/support/` - Support ticket system with replies
+- `app/settings/` - User preferences and data export/import
+
+### API Layer
+- `app/api/patients/` - CRUD operations for patient management
+- `app/api/messages/` - Messaging with optional SSE for real-time updates
+- `app/api/appointments/` - Calendar and appointment management
+- `app/api/support/` - Support ticket system
+- `app/api/settings/` - User preferences and configuration
+
+### Components Architecture
+- `components/ui/` - shadcn/ui base components (Button, Card, Dialog, etc.)
+- `components/patient-card.tsx` - Reusable patient display component
+- `components/message-thread.tsx` - Chat interface component
+- `components/calendar-view.tsx` - Calendar grid and event components
+- `components/appointment-form.tsx` - Appointment creation/editing
+- `components/support-ticket.tsx` - Ticket display and reply components
+
+### Data Seeding & Development
+- `scripts/seed.ts` - Populates database with sample data
+- `/data/` - JSON fallback files for development without database
+- Sample data includes 3 patients, 8 messages, 6 appointments, 2 support tickets
+
+### Key Features Implemented
+1. **Responsive Design**: Mobile-first with collapsible sidebar
+2. **Theme System**: Dark theme optimized for medical professionals
+3. **Real-time Messaging**: SSE or polling for live message updates
+4. **File Attachments**: Support for images/PDFs in messages
+5. **Search & Filtering**: Across patients, messages, appointments
+6. **Data Export/Import**: JSON export for backup and migration
+7. **Accessibility**: ARIA labels, keyboard navigation, screen reader support
+8. **Performance**: Pagination for large lists, optimized queries
+
+### Development Workflow
+- `npm run dev` - Start development server
+- `npm run db:push` - Apply schema changes
+- `npm run db:seed` - Populate with sample data
+- `npm run db:studio` - Visual database browser
+- Automatic TypeScript type generation from Prisma schema
+
+### Deployment Ready
+- Vercel-optimized configuration
+- Environment variable templates
+- Production PostgreSQL support
+- Automatic database migrations
+- Static asset optimization
