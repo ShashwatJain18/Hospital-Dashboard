@@ -1,204 +1,146 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { Patient } from "@/lib/types"
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { Patient } from "@/lib/types";
 
 interface PatientDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  patient?: Patient | null
-  onSave: (patient: Omit<Patient, "id" | "createdAt" | "updatedAt">) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  patient: Patient | null;
+  onSave: (patientData: Partial<Patient>) => void;
 }
 
 export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDialogProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
-    gender: "",
-    address: "",
-    notes: "",
-    allergies: "",
-    lastVisit: "",
-  })
+  const [formData, setFormData] = useState<Partial<Patient>>({});
 
   useEffect(() => {
-    if (patient) {
-      setFormData({
-        name: patient.name || "",
-        email: patient.email || "",
-        phone: patient.phone || "",
-        dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split("T")[0] : "",
-        gender: patient.gender || "",
-        address: patient.address || "",
-        notes: patient.notes || "",
-        allergies: patient.allergies || "",
-        lastVisit: patient.lastVisit ? new Date(patient.lastVisit).toISOString().split("T")[0] : "",
-      })
-    } else {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        dateOfBirth: "",
-        gender: "",
-        address: "",
-        notes: "",
-        allergies: "",
-        lastVisit: "",
-      })
+    setFormData(patient || {});
+  }, [patient]);
+
+  // calculate age automatically from dob
+  useEffect(() => {
+    if (formData.dob) {
+      const birthDate = new Date(formData.dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      setFormData((prev) => ({ ...prev, age }));
     }
-  }, [patient, open])
+  }, [formData.dob]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleChange = (field: keyof Patient, value: any) => {
+    setFormData({ ...formData, [field]: value });
+  };
 
-    const patientData = {
-      name: formData.name,
-      email: formData.email || undefined,
-      phone: formData.phone || undefined,
-      dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined,
-      gender: formData.gender || undefined,
-      address: formData.address || undefined,
-      notes: formData.notes || undefined,
-      allergies: formData.allergies || undefined,
-      lastVisit: formData.lastVisit ? new Date(formData.lastVisit) : undefined,
-    }
+  const handleSubmit = () => {
+    if (!formData.name) return alert("Name is required");
+    if (formData.aadhaar && formData.aadhaar.length !== 12)
+      return alert("Aadhaar must be 12 digits");
+    if (formData.phone && formData.phone.length !== 10)
+      return alert("Phone must be 10 digits");
 
-    onSave(patientData)
-  }
+    // Unique ID = reverse of Aadhaar
+    if (formData.aadhaar) formData.uniqueid = formData.aadhaar.split("").reverse().join("");
+
+    onSave(formData);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{patient ? "Edit Patient" : "Add New Patient"}</DialogTitle>
-          <DialogDescription>
-            {patient ? "Update patient information" : "Enter patient details to add them to your practice"}
-          </DialogDescription>
+          <DialogTitle>{patient ? "Edit Patient" : "Add Patient"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
-              <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Horizontal form: use grid with 2 or 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
+          <div>
+            <Label>Name</Label>
+            <Input value={formData.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-            </div>
+          <div>
+            <Label>DOB</Label>
+            <Input type="date" value={formData.dob || ""} onChange={(e) => handleChange("dob", e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastVisit">Last Visit</Label>
-              <Input
-                id="lastVisit"
-                type="date"
-                value={formData.lastVisit}
-                onChange={(e) => setFormData({ ...formData, lastVisit: e.target.value })}
-              />
-            </div>
+          <div>
+            <Label>Age</Label>
+            <Input type="number" value={formData.age || ""} readOnly />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            />
+          <div>
+            <Label>Gender</Label>
+            <Input value={formData.gender || ""} onChange={(e) => handleChange("gender", e.target.value)} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="allergies">Allergies</Label>
-            <Input
-              id="allergies"
-              value={formData.allergies}
-              onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-              placeholder="e.g., Penicillin, Shellfish, None"
-            />
+          <div>
+            <Label>Height</Label>
+            <Input value={formData.height || ""} onChange={(e) => handleChange("height", e.target.value)} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Medical Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Additional medical notes, conditions, or observations..."
-              rows={3}
-            />
+          <div>
+            <Label>Weight</Label>
+            <Input value={formData.weight || ""} onChange={(e) => handleChange("weight", e.target.value)} />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">{patient ? "Update Patient" : "Add Patient"}</Button>
-          </DialogFooter>
-        </form>
+          <div>
+            <Label>Workplace</Label>
+            <Input value={formData.workplace || ""} onChange={(e) => handleChange("workplace", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Address</Label>
+            <Input value={formData.address || ""} onChange={(e) => handleChange("address", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Aadhaar</Label>
+            <Input value={formData.aadhaar || ""} onChange={(e) => handleChange("aadhaar", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Phone</Label>
+            <Input value={formData.phone || ""} onChange={(e) => handleChange("phone", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Email</Label>
+            <Input value={formData.email || ""} onChange={(e) => handleChange("email", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>History</Label>
+            <Input value={formData.history || ""} onChange={(e) => handleChange("history", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Medicines</Label>
+            <Input value={formData.medicines || ""} onChange={(e) => handleChange("medicines", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Allergies</Label>
+            <Input value={formData.allergies || ""} onChange={(e) => handleChange("allergies", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Permanent Conditions</Label>
+            <Input value={formData.permanent_conditions || ""} onChange={(e) => handleChange("permanent_conditions", e.target.value)} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button onClick={handleSubmit}>{patient ? "Update" : "Add"}</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

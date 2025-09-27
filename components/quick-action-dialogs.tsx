@@ -145,44 +145,61 @@ export function NewAppointmentDialog({ open, onOpenChange }: NewAppointmentDialo
 }
 
 interface AddPatientDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (data: any) => void; // send patient data to parent
 }
 
-export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) {
+export function AddPatientDialog({ open, onOpenChange, onSave }: AddPatientDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
+    dob: "",
+    age: "",
+    gender: "",
+    height: "",
+    weight: "",
+    workplace: "",
     address: "",
-    emergencyContact: "",
-    medicalHistory: "",
-  })
+    aadhaar: "",
+    phone: "",
+    email: "",
+    permanent_conditions: "",
+    allergies: "",
+    medicines: "",
+    history: "",
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle patient creation
-    console.log("Creating patient:", formData)
-    onOpenChange(false)
-    // Reset form
+    e.preventDefault();
+    onSave(formData);
+    onOpenChange(false);
     setFormData({
       name: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
+      dob: "",
+      age: "",
+      gender: "",
+      height: "",
+      weight: "",
+      workplace: "",
       address: "",
-      emergencyContact: "",
-      medicalHistory: "",
-    })
-  }
+      aadhaar: "",
+      phone: "",
+      email: "",
+      permanent_conditions: "",
+      allergies: "",
+      medicines: "",
+      history: "",
+    });
+  };
 
-  return (
+  
+
+   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Patient</DialogTitle>
-          <DialogDescription>Add a new patient to the hospital system.</DialogDescription>
+          <DialogDescription>Fill in all the details to add a new patient.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -191,8 +208,94 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dob">Date of Birth</Label>
+              <Input
+                id="dob"
+                type="date"
+                value={formData.dob}
+                onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <Select
+                value={formData.gender}
+                onValueChange={(value) => setFormData({ ...formData, gender: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="height">Height (cm)</Label>
+              <Input
+                id="height"
+                type="number"
+                value={formData.height}
+                onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weight">Weight (kg)</Label>
+              <Input
+                id="weight"
+                type="number"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="workplace">Workplace</Label>
+              <Input
+                id="workplace"
+                value={formData.workplace}
+                onChange={(e) => setFormData({ ...formData, workplace: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                rows={2}
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="aadhaar">Aadhaar Number</Label>
+              <Input
+                id="aadhaar"
+                value={formData.aadhaar}
+                onChange={(e) => setFormData({ ...formData, aadhaar: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -201,61 +304,48 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                required
+              <Label htmlFor="permanent_conditions">Permanent Conditions</Label>
+              <Textarea
+                id="permanent_conditions"
+                rows={2}
+                value={formData.permanent_conditions}
+                onChange={(e) => setFormData({ ...formData, permanent_conditions: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dateOfBirth">Date of Birth</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+              <Label htmlFor="allergies">Allergies</Label>
+              <Textarea
+                id="allergies"
+                rows={2}
+                value={formData.allergies}
+                onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
-              rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="emergencyContact">Emergency Contact</Label>
-            <Input
-              id="emergencyContact"
-              value={formData.emergencyContact}
-              onChange={(e) => setFormData((prev) => ({ ...prev, emergencyContact: e.target.value }))}
-              placeholder="Name and phone number"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="medicalHistory">Medical History</Label>
-            <Textarea
-              id="medicalHistory"
-              value={formData.medicalHistory}
-              onChange={(e) => setFormData((prev) => ({ ...prev, medicalHistory: e.target.value }))}
-              rows={3}
-              placeholder="Any relevant medical history, allergies, or conditions"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="medicines">Medicines</Label>
+              <Textarea
+                id="medicines"
+                rows={2}
+                value={formData.medicines}
+                onChange={(e) => setFormData({ ...formData, medicines: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="history">Medical History</Label>
+              <Textarea
+                id="history"
+                rows={2}
+                value={formData.history}
+                onChange={(e) => setFormData({ ...formData, history: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2">
@@ -267,9 +357,8 @@ export function AddPatientDialog({ open, onOpenChange }: AddPatientDialogProps) 
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-
 interface QuickMessageDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void

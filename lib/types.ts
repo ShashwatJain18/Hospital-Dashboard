@@ -38,18 +38,17 @@ export interface Appointment {
   id: string
   title: string
   description?: string
-  startTime: Date
-  endTime: Date
   patientId: string
-  doctorId: string
+  doctorId?: string
+  startTime: string | Date
+  endTime: string | Date
   status: "scheduled" | "completed" | "cancelled"
-  createdAt: Date
-  updatedAt: Date
-  patient?: {
+  createdAt?: string
+  patient?: Patient
+  doctor?: {
     id: string
     name: string
-    phone?: string
-  }
+  } // added for doctor info
 }
 
 export interface SupportTicket {
