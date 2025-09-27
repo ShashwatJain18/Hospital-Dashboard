@@ -21,7 +21,7 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
     setFormData(patient || {});
   }, [patient]);
 
-  // calculate age automatically from dob
+  // Calculate age automatically from DOB
   useEffect(() => {
     if (formData.dob) {
       const birthDate = new Date(formData.dob);
@@ -40,14 +40,17 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
   };
 
   const handleSubmit = () => {
-    if (!formData.name) return alert("Name is required");
-    if (formData.aadhaar && formData.aadhaar.length !== 12)
-      return alert("Aadhaar must be 12 digits");
-    if (formData.phone && formData.phone.length !== 10)
-      return alert("Phone must be 10 digits");
+    // Validations
+    if (!formData.name || !/^[A-Za-z\s]+$/.test(formData.name)) return alert("Name must be alphabetic");
+    if (!formData.aadhaar || !/^\d{12}$/.test(formData.aadhaar)) return alert("Aadhaar must be 12 digits");
+    if (!formData.phone || !/^\d{10}$/.test(formData.phone)) return alert("Phone must be 10 digits");
+    if (formData.height && !/^\d+$/.test(String(formData.height))) return alert("Height must be numeric");
+    if (formData.weight && !/^\d+$/.test(String(formData.weight))) return alert("Weight must be numeric");
+    if (!formData.email || !/^[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}$/.test(formData.email)) return alert("Invalid email");
+    if (!formData.biometrics_otp || !/^\d+$/.test(String(formData.biometrics_otp))) return alert("Biometrics/OTP must be numeric");
 
-    // Unique ID = reverse of Aadhaar
-    if (formData.aadhaar) formData.uniqueid = formData.aadhaar.split("").reverse().join("");
+    // Auto-generate ABHA ID = reverse of Aadhaar
+    if (formData.aadhaar) formData.abha_id = formData.aadhaar.split("").reverse().join("");
 
     onSave(formData);
   };
@@ -59,7 +62,6 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           <DialogTitle>{patient ? "Edit Patient" : "Add Patient"}</DialogTitle>
         </DialogHeader>
 
-        {/* Horizontal form: use grid with 2 or 3 columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
           <div>
             <Label>Name</Label>
@@ -92,11 +94,6 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           </div>
 
           <div>
-            <Label>Workplace</Label>
-            <Input value={formData.workplace || ""} onChange={(e) => handleChange("workplace", e.target.value)} />
-          </div>
-
-          <div>
             <Label>Address</Label>
             <Input value={formData.address || ""} onChange={(e) => handleChange("address", e.target.value)} />
           </div>
@@ -104,6 +101,11 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           <div>
             <Label>Aadhaar</Label>
             <Input value={formData.aadhaar || ""} onChange={(e) => handleChange("aadhaar", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>ABHA ID</Label>
+            <Input value={formData.abha_id || ""} readOnly />
           </div>
 
           <div>
@@ -117,8 +119,8 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
           </div>
 
           <div>
-            <Label>History</Label>
-            <Input value={formData.history || ""} onChange={(e) => handleChange("history", e.target.value)} />
+            <Label>Biometrics/OTP</Label>
+            <Input value={formData.biometrics_otp || ""} onChange={(e) => handleChange("biometrics_otp", e.target.value)} />
           </div>
 
           <div>
@@ -144,3 +146,4 @@ export function PatientDialog({ open, onOpenChange, patient, onSave }: PatientDi
     </Dialog>
   );
 }
+  

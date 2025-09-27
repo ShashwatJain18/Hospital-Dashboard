@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PatientDialog } from "@/components/patient-dialog";
 import { Search, Plus, Phone, Mail, Calendar, Filter } from "lucide-react";
@@ -45,70 +44,6 @@ export default function PatientsPage() {
       patient.phone?.includes(searchTerm)
   );
 
-  // Add patient
-  const handleAddPatient = async (patientData: Partial<Patient>) => {
-    if (!patientData.name) return alert("Name is required");
-    if (!patientData.aadhaar || patientData.aadhaar.length !== 12) return alert("Aadhaar must be 12 digits");
-    if (!patientData.phone || patientData.phone.length !== 10) return alert("Phone must be 10 digits");
-
-    const uniqueid = patientData.aadhaar.split("").reverse().join("");
-
-    const { data, error } = await supabase
-      .from("patient")
-      .insert([{
-        name: patientData.name,
-        dob: patientData.dob,
-        age: patientData.age ? Number(patientData.age) : null,
-        height: patientData.height || null,
-        weight: patientData.weight || null,
-        workplace: patientData.workplace || null,
-        address: patientData.address || null,
-        aadhaar: patientData.aadhaar,
-        uniqueid,
-        history: patientData.history || null,
-        medicines: patientData.medicines || null,
-        allergies: patientData.allergies || null,
-        permanent_conditions: patientData.permanent_conditions || null,
-        gender: patientData.gender || null,
-        phone: patientData.phone || null,
-        email: patientData.email || null,
-      }])
-      .select();
-
-    if (error) {
-      console.error("Error adding patient:", error);
-      return alert("Error adding patient: " + error.message);
-    }
-
-    if (data && data.length > 0) {
-      setPatients([data[0], ...patients]);
-    }
-
-    setIsDialogOpen(false);
-  };
-
-  // Edit patient
-  const handleEditPatient = async (patientData: Partial<Patient>) => {
-    if (!selectedPatient) return;
-
-    const { data, error } = await supabase
-      .from("patient")
-      .update({ ...patientData, age: patientData.age ? Number(patientData.age) : null })
-      .eq("id", selectedPatient.id)
-      .select();
-
-    if (error) {
-      console.error("Error updating patient:", error);
-      return;
-    }
-
-    if (data && data.length > 0)
-      setPatients(patients.map((p) => (p.id === selectedPatient.id ? data[0] : p)));
-
-    setIsDialogOpen(false);
-    setSelectedPatient(null);
-  };
-
   const openEditDialog = (patient: Patient) => {
     setSelectedPatient(patient);
     setIsDialogOpen(true);
@@ -119,7 +54,6 @@ export default function PatientsPage() {
     setIsDialogOpen(true);
   };
 
-  // Delete patient
   const handleDeletePatient = async (patient: Patient) => {
     if (!confirm(`Are you sure you want to delete ${patient.name}?`)) return;
     const { error } = await supabase.from("patient").delete().eq("id", patient.id);
@@ -188,15 +122,12 @@ export default function PatientsPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                <div>
-                  <strong>Allergies:</strong> {patient.allergies || "None"}
-                </div>
-                <div>
-                  <strong>Permanent Conditions:</strong> {patient.permanent_conditions || "None"}
-                </div>
-                <div>
-                  <strong>History:</strong> {patient.history || "None"}
-                </div>
+                <div><strong>ABHA ID:</strong> {patient.abha_id || "N/A"}</div>
+                <div><strong>Biometrics/OTP:</strong> {patient.biometrics_otp || "N/A"}</div>
+                <div><strong>Allergies:</strong> {patient.allergies || "None"}</div>
+                <div><strong>Permanent Conditions:</strong> {patient.permanent_conditions || "None"}</div>
+                <div><strong>Height:</strong> {patient.height || "N/A"} cm</div>
+                <div><strong>Weight:</strong> {patient.weight || "N/A"} kg</div>
               </div>
 
               {patient.email && (
@@ -216,16 +147,12 @@ export default function PatientsPage() {
               )}
 
               <div className="flex items-center justify-between pt-2">
-                <Button variant="outline" size="sm" onClick={() => openEditDialog(patient)}>
-                  Edit
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => openEditDialog(patient)}>Edit</Button>
                 <div className="flex gap-2">
                   <Link href={`/patients/${patient.id}`}>
                     <Button variant="ghost" size="sm">View Details</Button>
                   </Link>
-                  <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(patient)}>
-                    Delete
-                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDeletePatient(patient)}>Delete</Button>
                 </div>
               </div>
             </CardContent>
@@ -245,7 +172,7 @@ export default function PatientsPage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         patient={selectedPatient}
-        onSave={selectedPatient ? handleEditPatient : handleAddPatient}
+        onSave={selectedPatient ? undefined : undefined}
       />
     </div>
   );
