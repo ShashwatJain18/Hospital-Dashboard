@@ -185,21 +185,27 @@ export default function CalendarPage() {
         <h1 className="text-3xl font-bold">Calendar</h1>
 
         <Select
-          value={selectedDoctor}
-          onValueChange={(val) => setSelectedDoctor(val)}
-        >
-          <SelectTrigger className="w-52">
-            <SelectValue placeholder="Select Doctor" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Doctors</SelectItem>
-            {doctors.map((doc) => (
-              <SelectItem key={doc.id} value={doc.id}>
-                {doc.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      value={selectedDoctor}
+      onValueChange={(val) => {
+        setSelectedDoctor(val);
+        onDoctorChange?.(val);
+      }}
+    >
+      <SelectTrigger className="bg-white text-black h-10 w-44 text-base">
+        {selectedDoctor === "all"
+          ? "All Doctors"
+          : doctors.find((d) => d.id === selectedDoctor)?.name}
+      </SelectTrigger>
+      <SelectContent className="bg-white text-black">
+        <SelectItem value="all">All Doctors</SelectItem>
+        {doctors.map((doctor) => (
+          <SelectItem key={doctor.id} value={doctor.id}>
+            {doctor.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+
 
         <Button onClick={() => openAddDialog()}>New Appointment</Button>
       </div>
