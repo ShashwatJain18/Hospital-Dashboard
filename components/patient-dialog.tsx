@@ -126,7 +126,14 @@ export function PatientDialog({ open, onOpenChange, patient, onSave, mode = "add
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[90vw] w-[90vw] h-[80vh] overflow-auto flex flex-col md:flex-row gap-6">
+      <DialogContent
+  className={
+    mode === "find"
+      ? "w-[400px] max-w-full flex flex-col items-center justify-center gap-4"
+      : "max-w-[90vw] w-[90vw] h-[80vh] overflow-auto flex flex-col md:flex-row gap-6"
+  }
+>
+
         {/* Form fields only if mode is add/edit */}
         {(mode === "add" || mode === "edit") && (
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">

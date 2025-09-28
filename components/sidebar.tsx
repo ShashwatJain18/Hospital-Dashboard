@@ -95,8 +95,7 @@ export function Sidebar({ className }: SidebarProps) {
               <Stethoscope className="w-6 h-6 text-sidebar-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-sidebar-foreground">HospitalHub</h1>
-              <p className="text-sm text-sidebar-foreground/70">Reception Management</p>
+              <h1 className="text-xl font-bold text-sidebar-foreground">Hospital Dashboard</h1>
             </div>
           </div>
 

@@ -40,11 +40,11 @@ export default function PatientsPage() {
   }, []);
 
   const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.phone?.includes(searchTerm)
-  );
+  (patient) =>
+    patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.phone?.toString().includes(searchTerm)
+);
 
   // Open dialogs
   const openAddDialog = () => {

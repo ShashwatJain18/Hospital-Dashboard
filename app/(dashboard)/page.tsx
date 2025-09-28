@@ -128,7 +128,6 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
-          <p className="text-muted-foreground">Hospital reception management system</p>
         </div>
       </div>
 
