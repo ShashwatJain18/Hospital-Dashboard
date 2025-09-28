@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -25,7 +25,7 @@ import {
   QuickMessageDialog,
   CreateSupportTicketDialog,
 } from "@/components/quick-action-dialogs"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { supabase } from "@/lib/supabase"
 
 interface DashboardMetrics {
   doctors: number
@@ -40,18 +40,8 @@ interface DashboardMetrics {
 }
 
 export default function DashboardPage() {
-  const [metrics, setMetrics] = useLocalStorage<DashboardMetrics>("dashboard-metrics", {
-    doctors: 5,
-    patients: 247,
-    appointments: 12,
-    medicines: 156,
-    todayAppointments: 8,
-    thisWeekAppointments: 45,
-    nextMonthAppointments: 127,
-    unreadMessages: 3,
-    openTickets: 2,
-  })
-
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
+  const [loading, setLoading] = useState(true)
   const [dialogStates, setDialogStates] = useState({
     newAppointment: false,
     addPatient: false,
@@ -59,20 +49,82 @@ export default function DashboardPage() {
     createTicket: false,
   })
 
+  // Helper to open/close dialogs
+  const openDialog = (dialog: keyof typeof dialogStates) => setDialogStates((prev) => ({ ...prev, [dialog]: true }))
+  const closeDialog = (dialog: keyof typeof dialogStates) => setDialogStates((prev) => ({ ...prev, [dialog]: false }))
+
+  // Fetch metrics from Supabase
+  useEffect(() => {
+    async function fetchMetrics() {
+      setLoading(true)
+      try {
+        // Count doctors
+        const { count: doctorsCount } = await supabase.from("doctor").select("*", { count: "exact", head: true })
+
+        // Count patients
+        const { count: patientsCount } = await supabase.from("patient").select("*", { count: "exact", head: true })
+
+        // Count all appointments
+        const { count: appointmentsCount } = await supabase.from("appointment").select("*", { count: "exact", head: true })
+
+        // Count today appointments
+        const today = new Date().toISOString().split("T")[0]
+        const { count: todayAppointmentsCount } = await supabase
+          .from("appointments")
+          .select("*", { count: "exact", head: true })
+          .eq("date", today)
+
+        // Count this week appointments
+        const now = new Date()
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay())).toISOString().split("T")[0]
+        const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6)).toISOString().split("T")[0]
+        const { count: weekAppointmentsCount } = await supabase
+          .from("appointments")
+          .select("*", { count: "exact", head: true })
+          .gte("date", weekStart)
+          .lte("date", weekEnd)
+
+        // Count next month appointments
+        const nextMonth = new Date()
+        nextMonth.setMonth(nextMonth.getMonth() + 1)
+        const monthStart = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1).toISOString().split("T")[0]
+        const monthEnd = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).toISOString().split("T")[0]
+        const { count: nextMonthAppointmentsCount } = await supabase
+          .from("appointments")
+          .select("*", { count: "exact", head: true })
+          .gte("date", monthStart)
+          .lte("date", monthEnd)
+
+        setMetrics({
+          doctors: doctorsCount ?? 0,
+          patients: patientsCount ?? 0,
+          appointments: appointmentsCount ?? 0,
+          medicines: 0, // You can fetch medicine count similarly
+          todayAppointments: todayAppointmentsCount ?? 0,
+          thisWeekAppointments: weekAppointmentsCount ?? 0,
+          nextMonthAppointments: nextMonthAppointmentsCount ?? 0,
+          unreadMessages: 0,
+          openTickets: 0,
+        })
+      } catch (err) {
+        console.error("Error fetching metrics:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMetrics()
+  }, [])
+
+  if (loading || !metrics) return <p>Loading dashboard...</p>
+
   const updateMetric = (key: keyof DashboardMetrics, value: number) => {
-    setMetrics((prev) => ({ ...prev, [key]: value }))
-  }
-
-  const openDialog = (dialog: keyof typeof dialogStates) => {
-    setDialogStates((prev) => ({ ...prev, [dialog]: true }))
-  }
-
-  const closeDialog = (dialog: keyof typeof dialogStates) => {
-    setDialogStates((prev) => ({ ...prev, [dialog]: false }))
+    setMetrics((prev) => ({ ...prev!, [key]: value }))
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
@@ -80,6 +132,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Top Metrics */}
       <div className="grid gap-6 lg:grid-cols-6">
         <div className="lg:col-span-2">
           <DoctorSelector />
@@ -129,7 +182,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Appointments & Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Appointments */}
         <Card>
           <CardHeader>
             <CardTitle>Appointments Schedule</CardTitle>
@@ -152,41 +207,9 @@ export default function DashboardPage() {
                     className="text-sm"
                   />
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 bg-accent rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
-                        <Clock className="w-4 h-4 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">John Smith</p>
-                        <p className="text-xs text-muted-foreground">Regular Checkup</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">9:00 AM</p>
-                      <Badge variant="secondary" className="text-xs">
-                        Confirmed
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-accent rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-full">
-                        <Clock className="w-4 h-4 text-primary-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Emily Davis</p>
-                        <p className="text-xs text-muted-foreground">Follow-up Visit</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">10:30 AM</p>
-                      <Badge variant="secondary" className="text-xs">
-                        Confirmed
-                      </Badge>
-                    </div>
-                  </div>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>Today's appointments overview</p>
                 </div>
               </TabsContent>
 
@@ -201,7 +224,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Weekly appointments overview</p>
+                  <p>This week's appointments overview</p>
                 </div>
               </TabsContent>
 
@@ -216,13 +239,14 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Monthly appointments overview</p>
+                  <p>Next month's appointments overview</p>
                 </div>
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
 
+        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -265,38 +289,13 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unread Messages</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <EditableMetric value={metrics.unreadMessages} onSave={(value) => updateMetric("unreadMessages", value)} />
-            <p className="text-xs text-muted-foreground">Requires attention</p>
-          </CardContent>
-        </Card>
+      
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Support Tickets</CardTitle>
-            <HeadphonesIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <EditableMetric value={metrics.openTickets} onSave={(value) => updateMetric("openTickets", value)} />
-            <p className="text-xs text-muted-foreground">Support requests</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Dialog components */}
-      <NewAppointmentDialog open={dialogStates.newAppointment} onOpenChange={(open) => closeDialog("newAppointment")} />
-      <AddPatientDialog open={dialogStates.addPatient} onOpenChange={(open) => closeDialog("addPatient")} />
-      <QuickMessageDialog open={dialogStates.quickMessage} onOpenChange={(open) => closeDialog("quickMessage")} />
-      <CreateSupportTicketDialog
-        open={dialogStates.createTicket}
-        onOpenChange={(open) => closeDialog("createTicket")}
-      />
+      {/* Dialogs */}
+      <NewAppointmentDialog open={dialogStates.newAppointment} onOpenChange={() => closeDialog("newAppointment")} />
+      <AddPatientDialog open={dialogStates.addPatient} onOpenChange={() => closeDialog("addPatient")} />
+      <QuickMessageDialog open={dialogStates.quickMessage} onOpenChange={() => closeDialog("quickMessage")} />
+      <CreateSupportTicketDialog open={dialogStates.createTicket} onOpenChange={() => closeDialog("createTicket")} />
     </div>
   )
 }

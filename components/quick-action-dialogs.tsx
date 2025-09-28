@@ -14,7 +14,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { doctors } from "./doctor-selector"
+import { DoctorSelector } from "./doctor-selector"
+import { useDoctors } from "@/hooks/use-doctors"
 
 interface NewAppointmentDialogProps {
   open: boolean
@@ -22,8 +23,10 @@ interface NewAppointmentDialogProps {
 }
 
 export function NewAppointmentDialog({ open, onOpenChange }: NewAppointmentDialogProps) {
+  const { doctors, loading } = useDoctors()
   const [date, setDate] = useState<Date>()
   const [formData, setFormData] = useState({
+    
     patientName: "",
     doctorId: "",
     time: "",
@@ -62,20 +65,25 @@ export function NewAppointmentDialog({ open, onOpenChange }: NewAppointmentDialo
           <div className="space-y-2">
             <Label>Doctor</Label>
             <Select
-              value={formData.doctorId}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, doctorId: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select doctor" />
-              </SelectTrigger>
-              <SelectContent>
-                {doctors.map((doctor) => (
-                  <SelectItem key={doctor.id} value={doctor.id}>
-                    {doctor.name} - {doctor.specialization}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+  value={formData.doctorId}
+  onValueChange={(value) => setFormData((prev) => ({ ...prev, doctorId: value }))}
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select doctor" />
+  </SelectTrigger>
+  <SelectContent>
+    {loading ? (
+      <SelectItem value="" disabled>Loading doctors...</SelectItem>
+    ) : (
+      doctors.map((doctor) => (
+        <SelectItem key={doctor.id} value={doctor.id}>
+          {doctor.name} - {doctor.specialization}
+        </SelectItem>
+      ))
+    )}
+  </SelectContent>
+</Select>
+
           </div>
 
           <div className="space-y-2">
@@ -365,6 +373,7 @@ interface QuickMessageDialogProps {
 }
 
 export function QuickMessageDialog({ open, onOpenChange }: QuickMessageDialogProps) {
+    const { doctors, loading } = useDoctors() 
   const [formData, setFormData] = useState({
     recipient: "",
     subject: "",
@@ -399,14 +408,19 @@ export function QuickMessageDialog({ open, onOpenChange }: QuickMessageDialogPro
                 <SelectValue placeholder="Select recipient" />
               </SelectTrigger>
               <SelectContent>
-                {doctors.map((doctor) => (
-                  <SelectItem key={doctor.id} value={doctor.id}>
-                    {doctor.name}
-                  </SelectItem>
-                ))}
-                <SelectItem value="admin">Hospital Administration</SelectItem>
-                <SelectItem value="nursing">Nursing Staff</SelectItem>
-              </SelectContent>
+  {loading ? (
+    <SelectItem value="" disabled>Loading doctors...</SelectItem>
+  ) : (
+    doctors.map((doctor) => (
+      <SelectItem key={doctor.id} value={doctor.id}>
+        {doctor.name}
+      </SelectItem>
+    ))
+  )}
+  <SelectItem value="admin">Hospital Administration</SelectItem>
+  <SelectItem value="nursing">Nursing Staff</SelectItem>
+</SelectContent>
+
             </Select>
           </div>
 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PatientDialog } from "@/components/patient-dialog";
-import { ArrowLeft, Edit, Upload, FileText, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Edit, Upload, FileText } from "lucide-react";
 import { formatDate, getInitials } from "@/lib/utils";
 import type { Patient } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
@@ -31,13 +31,16 @@ export default function PatientDetailPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
+  // Fetch patient info
   const fetchPatient = async () => {
     const { data, error } = await supabase.from("patient").select("*").eq("id", patientId).single();
     if (error) console.error("Error fetching patient:", error);
     else setPatient(data);
   };
 
+  // Fetch medical records
   const fetchRecords = async () => {
     const { data, error } = await supabase
       .from("medical_records")
@@ -55,32 +58,45 @@ export default function PatientDetailPage() {
 
   if (!patient) return <p className="text-center py-12">Loading patient details...</p>;
 
+  // Handle file upload
   const handleUploadRecord = async () => {
-    if (!selectedFile) return;
-    const fileName = `${patientId}/${Date.now()}_${selectedFile.name}`;
-    const { error: storageError } = await supabase.storage
-      .from("medical-records")
-      .upload(fileName, selectedFile, { upsert: true });
-    if (storageError) {
-      console.error("Storage upload error:", storageError);
-      return;
-    }
-    const { data, error: dbError } = await supabase
-      .from("medical_records")
-      .insert([{
-        patient_id: patientId,
-        filename: selectedFile.name,
-        upload_date: new Date().toISOString(),
-        uploaded_by: "Dr. Admin",
-        summary: "",
-        type: selectedFile.type,
-        storage_path: fileName
-      }])
-      .select();
-    if (dbError) console.error("Error saving record:", dbError);
-    else {
-      fetchRecords();
+    if (!selectedFile) return alert("Please select a file to upload.");
+    setUploading(true);
+
+    try {
+      const fileName = `${patientId}/${Date.now()}_${selectedFile.name}`;
+      
+      // Upload to Supabase Storage
+      const { error: storageError } = await supabase.storage
+        .from("medical-files")
+        .upload(fileName, selectedFile, { upsert: true });
+
+      if (storageError) throw storageError;
+
+      // Save record metadata in DB
+      const { error: dbError } = await supabase
+        .from("medical_records")
+        .insert([{
+          patient_id: patientId,
+          filename: selectedFile.name,
+          upload_date: new Date().toISOString(),
+          uploaded_by: "Dr. Admin",
+          summary: "",
+          type: selectedFile.type,
+          storage_path: fileName
+        }]);
+
+      if (dbError) throw dbError;
+
+      // Refresh records and reset
+      await fetchRecords();
       setSelectedFile(null);
+      alert("File uploaded successfully!");
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      alert("Failed to upload fil: " + err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -132,54 +148,76 @@ export default function PatientDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Medical Records */}
-      <div className="space-y-6">
-        {/* Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Medical Record</CardTitle>
-            <CardDescription>Select a PDF to upload</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col md:flex-row items-center gap-4">
-              <label htmlFor="record-file" className="flex-1 cursor-pointer">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">{selectedFile ? selectedFile.name : "Choose File (PDF)"}</p>
-                </div>
-              </label>
-              <input id="record-file" type="file" className="hidden" accept="application/pdf" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
-              <Button onClick={handleUploadRecord} disabled={!selectedFile} className="bg-black hover:bg-gray-800 h-12 px-6">Upload</Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Upload PDF */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Medical Record</CardTitle>
+          <CardDescription>Select a file to upload</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <label htmlFor="record-file" className="flex-1 cursor-pointer">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">{selectedFile ? selectedFile.name : "Choose File"}</p>
+              </div>
+            </label>
+           <input
+  id="record-file"
+  type="file"
+  className="hidden"
+  accept="application/pdf,image/*"  // Accept PDF and images
+  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+/>
 
-        {/* Past Records */}
-        <Card className="max-h-[400px] overflow-y-auto">
-          <CardHeader>
-            <CardTitle>Past Medical Records</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {records.length === 0 && <p className="text-muted-foreground italic">No medical records found.</p>}
-            {records.map((rec) => (
-              <div key={rec.id} className="flex justify-between items-center p-3 border rounded hover:shadow-sm transition-shadow">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="font-medium">{rec.filename}</p>
-                    <p className="text-sm text-muted-foreground">{rec.type} • {new Date(rec.upload_date).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <a href={supabase.storage.from("medical-records").getPublicUrl(rec.storage_path).publicUrl} target="_blank" className="text-blue-600 hover:underline flex items-center gap-1">View</a>
+            <Button
+              onClick={handleUploadRecord}
+              disabled={!selectedFile || uploading}
+              className="bg-black hover:bg-gray-800 h-12 px-6"
+            >
+              {uploading ? "Uploading..." : "Upload"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Past Records */}
+      <Card className="max-h-[400px] overflow-y-auto">
+        <CardHeader>
+          <CardTitle>Past Medical Records</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {records.length === 0 && <p className="text-muted-foreground italic">No medical records found.</p>}
+          {records.map((rec) => (
+            <div key={rec.id} className="flex justify-between items-center p-3 border rounded hover:shadow-sm transition-shadow">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="font-medium">{rec.filename}</p>
+                  <p className="text-sm text-muted-foreground">{rec.type} • {new Date(rec.upload_date).toLocaleDateString()}</p>
                 </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+              <div className="flex gap-2">
+                <a
+                  href={supabase.storage.from("medical-files").getPublicUrl(rec.storage_path).data.publicUrl}
+                  target="_blank"
+                  className="text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  View
+                </a>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
-      <PatientDialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} patient={patient} onSave={(data) => { setPatient(data as Patient); setIsEditDialogOpen(false); }} />
+      {/* Edit Patient Dialog */}
+      <PatientDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        patient={patient}
+        onSave={(updatedPatient) => { setPatient(updatedPatient as Patient); setIsEditDialogOpen(false); }}
+      />
     </div>
   );
 }

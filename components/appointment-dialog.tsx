@@ -71,14 +71,19 @@ export function AppointmentDialog({
         status: "scheduled",
       })
     }
-  }, [appointment, selectedDate, open])
+  }, [appointment, selectedDate, open, selectedDoctor])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.startDate || !formData.startTime || !formData.endTime) return
 
-    const startTime = new Date(`${formData.startDate}T${formData.startTime}`)
-    const endTime = new Date(`${formData.startDate}T${formData.endTime}`)
+    // ⚡ FIXED: Create date manually to prevent 1-day-back issue
+    const [year, month, day] = formData.startDate.split("-").map(Number)
+    const [startHour, startMinute] = formData.startTime.split(":").map(Number)
+    const [endHour, endMinute] = formData.endTime.split(":").map(Number)
+
+    const startTime = new Date(year, month - 1, day, startHour, startMinute)
+    const endTime = new Date(year, month - 1, day, endHour, endMinute)
 
     onSave(
       {
@@ -113,6 +118,20 @@ export function AppointmentDialog({
               <SelectContent>
                 {patients.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Doctor *</Label>
+            <Select value={formData.doctorId} onValueChange={(val) => setFormData({ ...formData, doctorId: val })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a doctor" />
+              </SelectTrigger>
+              <SelectContent>
+                {doctors.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
